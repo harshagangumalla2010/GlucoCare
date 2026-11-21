@@ -33,7 +33,15 @@ const server = http.createServer((req, res) => {
     reqPath = '/index.html';
   }
 
-  const filePath = path.join(__dirname, reqPath);
+  let filePath = path.join(__dirname, reqPath);
+
+  // If not found in root, check in public/ directory (mimicking Vite publicDir behavior)
+  if (!fs.existsSync(filePath)) {
+    const publicCandidate = path.join(__dirname, 'public', reqPath);
+    if (fs.existsSync(publicCandidate)) {
+      filePath = publicCandidate;
+    }
+  }
 
   fs.stat(filePath, (err, stats) => {
     if (err || !stats.isFile()) {

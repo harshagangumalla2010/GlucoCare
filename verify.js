@@ -1,4 +1,3 @@
-import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -6,33 +5,42 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-process.stdout.write('[1/4] Starting internal server verification...\n');
+function log(msg) {
+  fs.writeSync(1, msg + '\n');
+}
+
+function errLog(msg) {
+  fs.writeSync(2, msg + '\n');
+}
+
+log('[1/4] Starting internal verification...');
 
 const indexPath = path.join(__dirname, 'index.html');
-const bundlePath = path.join(__dirname, 'dist', 'bundle.jsx');
+const bundlePath = path.join(__dirname, 'public', 'bundle.jsx');
 
 if (!fs.existsSync(indexPath)) {
-  process.stderr.write('Error: index.html not found!\n');
+  errLog('Error: index.html not found!');
   process.exit(1);
 }
 
 if (!fs.existsSync(bundlePath)) {
-  process.stderr.write('Error: dist/bundle.jsx not found!\n');
+  errLog('Error: public/bundle.jsx not found!');
   process.exit(1);
 }
 
 const indexContent = fs.readFileSync(indexPath, 'utf-8');
 const bundleContent = fs.readFileSync(bundlePath, 'utf-8');
 
-process.stdout.write(`[2/4] index.html size: ${indexContent.length} bytes\n`);
-process.stdout.write(`[3/4] dist/bundle.jsx size: ${bundleContent.length} bytes\n`);
+log(`[2/4] index.html size: ${indexContent.length} bytes`);
+log(`[3/4] public/bundle.jsx size: ${bundleContent.length} bytes`);
 
 const checks = [
   { name: 'Contains root element', test: indexContent.includes('id="root"') },
   { name: 'Contains GlucoCare title', test: indexContent.includes('GlucoCare') },
   { name: 'Contains React CDN', test: indexContent.includes('unpkg.com/react@18') },
   { name: 'Contains Babel Standalone', test: indexContent.includes('unpkg.com/@babel/standalone') },
-  { name: 'Contains bundle.jsx script tag', test: indexContent.includes('src="/dist/bundle.jsx"') },
+  { name: 'Loads /bundle.jsx (Vite public asset)', test: indexContent.includes('src="/bundle.jsx"') },
+  { name: 'Does NOT load /dist/bundle.jsx', test: !indexContent.includes('src="/dist/bundle.jsx"') },
   { name: 'Bundle has GlucoCareApp', test: bundleContent.includes('GlucoCareApp') },
   { name: 'Bundle has DashboardView', test: bundleContent.includes('DashboardView') },
   { name: 'Bundle has GlucoseTrackerView', test: bundleContent.includes('GlucoseTrackerView') },
@@ -47,15 +55,15 @@ const checks = [
 let failed = 0;
 for (const c of checks) {
   if (c.test) {
-    process.stdout.write(`  ✓ ${c.name}\n`);
+    log(`  ✓ ${c.name}`);
   } else {
-    process.stderr.write(`  ✗ ${c.name} FAILED\n`);
+    errLog(`  ✗ ${c.name} FAILED`);
     failed++;
   }
 }
 
 if (failed === 0) {
-  process.stdout.write('\n[4/4] ALL 14 STRUCTURAL & COMPONENT CHECKS PASSED PERFECTLY! 🚀\n');
+  log('\n[4/4] ALL 15 VERIFICATION CHECKS PASSED PERFECTLY! 🚀');
 } else {
   process.exit(1);
 }
